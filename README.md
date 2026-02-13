@@ -36,3 +36,18 @@ Implement and compare six classification models to detect fraudulent credit card
 | XGBoost (Ensemble) | Best overall among the ensemble methods here (highest AUC and strong F1/MCC), good balance of precision and recall. |
 
 ## Repository structure
+project/
+app.py
+train_models.py
+requirements.txt
+README.md
+model/
+scaler.pkl
+logistic_regression.pkl
+decision_tree.pkl
+knn.pkl
+naive_bayes.pkl
+random_forest.pkl
+xgboost.pkl
+test_data.csv
+model_results.csv
