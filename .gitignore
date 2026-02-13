@@ -1,4 +1,4 @@
-creditcard.csv
+﻿creditcard.csv
 *.pkl
 scaler.pkl
 __pycache__/
