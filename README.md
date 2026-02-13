@@ -1,17 +1,26 @@
 # ML Assignment 2 (Machine Learning) - Credit Card Fraud Detection
 
 ## a. Problem statement
-Implement and compare six classification models to detect fraudulent credit card transactions (Class=1) versus legitimate transactions (Class=0). Deploy a Streamlit web app where a user can upload unseen test data (CSV), select a model, and view evaluation metrics and a confusion matrix / classification report.
+Implement and compare six classification models to detect fraudulent credit card transactions (Class = 1) versus legitimate transactions (Class = 0). Deploy a Streamlit web app where a user can upload unseen test data (CSV), select a model, and view evaluation metrics and a confusion matrix / classification report.
 
 ## b. Dataset description
 **Dataset:** Credit Card Fraud Detection (Kaggle)  
 **Link:** https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud  
 **Instances:** 284,807 transactions  
-**Features:** 30 features: `Time`, `Amount`, and `V1` to `V28` (PCA-transformed/anonymized)  
+**Features:** 30 input features: `Time`, `Amount`, and `V1` to `V28` (PCA-transformed/anonymized)  
 **Target:** `Class` where 0 = legitimate and 1 = fraud  
-**Note:** This dataset is highly imbalanced, so AUC, F1, and MCC are important along with accuracy.
+**Notes:** The dataset is highly imbalanced, so metrics like AUC, F1, and MCC are important along with accuracy.
 
 ## c. Models used
+All models are trained on the same dataset and evaluated using the required metrics.
+
+Models implemented:
+1. Logistic Regression  
+2. Decision Tree Classifier  
+3. K-Nearest Neighbors (kNN)  
+4. Naive Bayes (Gaussian)  
+5. Random Forest (Ensemble)  
+6. XGBoost (Ensemble)
 
 ### Metrics comparison table
 
@@ -28,26 +37,27 @@ Implement and compare six classification models to detect fraudulent credit card
 
 | ML Model Name | Observation about model performance |
 |---|---|
-| Logistic Regression | High recall but very low precision, meaning it catches many frauds but raises many false alarms; overall F1 and MCC are low. |
-| Decision Tree | Better precision than linear models, but lower AUC than ensembles; prone to overfitting, performance depends on depth constraint. |
-| kNN | Very strong precision/F1/MCC here; kNN can work well on scaled PCA features, but is memory-heavy and may be slow on large datasets. |
-| Naive Bayes | Fast baseline with high recall but low precision; independence assumptions limit precision on fraud class. |
-| Random Forest (Ensemble) | Strong overall balance; high precision and solid recall, giving good F1 and MCC. |
-| XGBoost (Ensemble) | Best overall among the ensemble methods here (highest AUC and strong F1/MCC), good balance of precision and recall. |
+| Logistic Regression | Very high recall but low precision, meaning it catches many frauds but produces many false positives; F1 and MCC remain low. |
+| Decision Tree | Better precision than linear baselines but lower AUC than ensembles; can overfit, and performance depends on constraints like max_depth. |
+| kNN | Strong precision/F1/MCC on this setup; works well with scaled PCA features, but is memory-heavy and slower on large datasets. |
+| Naive Bayes | Fast baseline with good recall but low precision; independence assumptions limit fraud-class precision. |
+| Random Forest (Ensemble) | Strong balance between precision and recall; high F1 and MCC, robust performance overall. |
+| XGBoost (Ensemble) | Best overall balance here (highest AUC and strong F1/MCC); handles imbalance well and captures complex patterns. |
 
 ## Repository structure
+```text
 project/
-app.py
-train_models.py
-requirements.txt
-README.md
-model/
-scaler.pkl
-logistic_regression.pkl
-decision_tree.pkl
-knn.pkl
-naive_bayes.pkl
-random_forest.pkl
-xgboost.pkl
-test_data.csv
-model_results.csv
+├── app.py
+├── train_models.py
+├── requirements.txt
+├── README.md
+├── model_results.csv
+├── test_data.csv
+└── model/
+    ├── scaler.pkl
+    ├── logistic_regression.pkl
+    ├── decision_tree.pkl
+    ├── knn.pkl
+    ├── naive_bayes.pkl
+    ├── random_forest.pkl
+    └── xgboost.pkl
