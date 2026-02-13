@@ -20,22 +20,54 @@ from sklearn.metrics import (
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 st.set_page_config(page_title="Credit Card Fraud - Model Demo", layout="wide")
 st.title("Credit Card Fraud Detection (6-Model Comparison)")
 
+# -------------------------
+# Sidebar: download first
+# -------------------------
 st.sidebar.header("Upload + Settings")
-uploaded = st.sidebar.file_uploader("Upload CSV (must include 'Class')", type=["csv"])  # Streamlit uploader [web:26]
+
+@st.cache_data
+def file_to_bytes(path: str) -> bytes:
+    with open(path, "rb") as f:
+        return f.read()
+
+st.sidebar.subheader("1) Download sample CSV (input format)")
+try:
+    sample_bytes = file_to_bytes("test_data.csv")
+    st.sidebar.download_button(
+        label="Download test_data.csv",
+        data=sample_bytes,
+        file_name="test_data.csv",
+        mime="text/csv",
+        key="download-test-csv",
+        help="Download a sample file in the correct format (includes 'Class'), then upload it below.",
+    )
+    st.sidebar.caption("New users: download this, then upload it.")
+except FileNotFoundError:
+    st.sidebar.warning("test_data.csv not found in repo. Add it to enable downloads.")
+
+# -------------------------
+# Sidebar: inputs
+# -------------------------
+st.sidebar.subheader("2) Upload CSV (input)")
+uploaded = st.sidebar.file_uploader("Upload CSV (must include 'Class')", type=["csv"])
 test_size = st.sidebar.slider("Test split (%)", 10, 40, 20)
 model_name = st.sidebar.selectbox(
     "Choose model",
     ["Logistic Regression", "Decision Tree", "KNN", "Naive Bayes", "Random Forest", "XGBoost"]
 )
 
-st.write("Upload a small CSV (recommended: a subset of the dataset). The app will train the selected model and evaluate on a hold-out test split.")
+st.write(
+    "Upload a small CSV (recommended: a subset of the dataset). "
+    "The app will train the selected model and evaluate on a hold-out test split."
+)
 
 if uploaded is None:
-    st.info("Upload a CSV to continue.")
-    st.stop()
+    st.info("Step 1: Download the sample CSV (optional). Step 2: Upload a CSV to continue.")
+    st.stop()  # Anything after this won't run if no upload [web:99]
 
 df = pd.read_csv(uploaded)
 
@@ -70,13 +102,20 @@ elif model_name == "KNN":
 elif model_name == "Naive Bayes":
     model = GaussianNB()
 elif model_name == "Random Forest":
-    model = RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced", max_depth=12, n_jobs=-1)
+    model = RandomForestClassifier(
+        n_estimators=200, random_state=42, class_weight="balanced", max_depth=12, n_jobs=-1
+    )
 else:
     model = XGBClassifier(
-        random_state=42, eval_metric="logloss",
-        max_depth=6, n_estimators=300, learning_rate=0.05,
-        subsample=0.9, colsample_bytree=0.9,
-        scale_pos_weight=scale_pos_weight, n_jobs=-1
+        random_state=42,
+        eval_metric="logloss",
+        max_depth=6,
+        n_estimators=300,
+        learning_rate=0.05,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        scale_pos_weight=scale_pos_weight,
+        n_jobs=-1,
     )
 
 model.fit(X_train_s, y_train)
@@ -121,22 +160,3 @@ with right:
     report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
     rep_df = pd.DataFrame(report).transpose()
     st.dataframe(rep_df.style.format("{:.4f}"), use_container_width=True)
-@st.cache_data
-def file_to_bytes(path: str) -> bytes:
-    with open(path, "rb") as f:
-        return f.read()
-
-st.sidebar.subheader("Sample test file")
-
-try:
-    sample_bytes = file_to_bytes("test_data.csv")
-    st.sidebar.download_button(
-        label="Download sample test_data.csv",
-        data=sample_bytes,
-        file_name="test_data.csv",
-        mime="text/csv",
-        key="download-test-csv",
-    )
-    st.sidebar.caption("Use this file for upload testing (includes 'Class').")
-except FileNotFoundError:
-    st.sidebar.warning("test_data.csv not found in repo. Add it to enable downloads.")
