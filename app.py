@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -76,7 +77,7 @@ def file_to_bytes(path: str) -> bytes:
 
 
 @st.cache_data
-def load_csv_from_path(path: str) -> pd.DataFrame:
+def load_sample_df(path: str) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
@@ -174,22 +175,22 @@ with st.sidebar:
     except FileNotFoundError:
         st.warning("test_data.csv missing in repo (download disabled).")
 
-    st.subheader("Run settings")
+    st.subheader("Run")
 
-    with st.form("run_form", clear_on_submit=False):  # Form submit is reliable [web:152][web:149]
+    mode = st.radio("Data source", ["Sample (one click)", "Upload CSV"], horizontal=True)
+    uploaded = st.file_uploader("Upload CSV (must include 'Class')", type=["csv"], disabled=(mode != "Upload CSV"))
+
+    with st.form("run_form", clear_on_submit=False):
         model_name = st.selectbox("Model", list(MODEL_THEME.keys()))
         test_size = st.slider("Test split (%)", 10, 40, 20)
-        data_mode = st.radio("Data source", ["Sample (one click)", "Upload CSV"], horizontal=True)
-        uploaded = st.file_uploader("Upload CSV (must include 'Class')", type=["csv"], disabled=(data_mode != "Upload CSV"))
         show_preview = st.checkbox("Show data preview", value=True)
-        submitted = st.form_submit_button("Train and evaluate")
+        animate = st.checkbox("Show animations", value=True)
+        submitted = st.form_submit_button("Train and evaluate", type="primary")  # colored [web:149]
 
-    clear = st.button("Clear results")
+    if st.button("Clear results"):
+        st.session_state.results = None
+        st.rerun()
 
-
-if clear:
-    st.session_state.results = None
-    st.rerun()
 
 theme = MODEL_THEME[model_name]
 st.markdown(
@@ -204,69 +205,67 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tab_run, tab_results, tab_about = st.tabs(["Run", "Results", "About"])
+result_placeholder = st.container()
 
-with tab_about:
-    st.markdown(
-        """
-<div class="card">
-<b>How to use</b><br>
-1) Pick the model and test split in the sidebar.<br>
-2) Choose Sample (one click) or Upload CSV.<br>
-3) Click <i>Train and evaluate</i>.<br>
-4) Open the Results tab.
-</div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with tab_run:
-    if submitted:
-        try:
-            if data_mode == "Sample (one click)":
-                df = load_csv_from_path("test_data.csv")
-                source = "Sample"
-            else:
-                if uploaded is None:
-                    st.error("Upload a CSV first or switch to Sample.")
-                    st.stop()
-                df = pd.read_csv(uploaded)
-                source = "Uploaded"
-
-            if "Class" not in df.columns:
-                st.error("CSV must contain 'Class' column.")
+if submitted:
+    try:
+        if mode == "Sample (one click)":
+            df = load_sample_df("test_data.csv")
+            source = "Sample"
+        else:
+            if uploaded is None:
+                st.error("Upload a CSV first or switch to Sample.")
                 st.stop()
+            df = pd.read_csv(uploaded)
+            source = "Uploaded"
 
-            fraud_pct = float(df["Class"].mean() * 100)
+        if "Class" not in df.columns:
+            st.error("CSV must contain 'Class' column.")
+            st.stop()
 
-            if show_preview:
-                st.subheader(f"{source} data preview")
-                st.dataframe(df.head(25), use_container_width=True)
+        if show_preview:
+            st.subheader(f"{source} data preview")
+            st.dataframe(df.head(25), use_container_width=True)
 
-            with st.spinner("Training and evaluating..."):
-                metrics, y_test, y_pred = run_pipeline(df, model_name, test_size)
+        if animate:
+            prog = st.progress(0, text="Preparing...")
+            time.sleep(0.2)
+            prog.progress(20, text="Splitting data...")
+            time.sleep(0.2)
+            prog.progress(50, text="Training model...")
+            time.sleep(0.2)
+            prog.progress(80, text="Evaluating metrics...")
+            time.sleep(0.2)
 
-            st.session_state.results = {
-                "source": source,
-                "rows": int(len(df)),
-                "fraud_pct": fraud_pct,
-                "model_name": model_name,
-                "test_size": test_size,
-                "metrics": metrics,
-                "y_test": y_test,
-                "y_pred": y_pred,
-            }
+        with st.spinner("Running training + evaluation..."):
+            metrics, y_test, y_pred = run_pipeline(df, model_name, test_size)
 
-            st.success("Done. Open the Results tab.")
-        except Exception as e:
-            st.error(f"Run failed: {e}")
-    else:
-        st.info("Configure settings in the sidebar and click Train and evaluate.")
+        if animate:
+            prog.progress(100, text="Done")
+            time.sleep(0.3)
+            prog.empty()
+            st.balloons()
 
-with tab_results:
-    res = st.session_state.results
+        st.session_state.results = {
+            "source": source,
+            "rows": int(len(df)),
+            "fraud_pct": float(df["Class"].mean() * 100),
+            "model_name": model_name,
+            "test_size": test_size,
+            "metrics": metrics,
+            "y_test": y_test,
+            "y_pred": y_pred,
+        }
+
+    except Exception as e:
+        st.error(f"Run failed: {e}")
+
+res = st.session_state.results
+
+with result_placeholder:
+    st.subheader("Results")
     if res is None:
-        st.info("No results yet. Run the model from the Run tab.")
+        st.info("Run the model to see results here.")
     else:
         st.markdown(
             f"""
