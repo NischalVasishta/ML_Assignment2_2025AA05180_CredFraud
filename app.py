@@ -112,4 +112,4 @@ def file_to_bytes(path: str) -> bytes:
 
 scaler, models = load_assets()
 
-with st.sidebar
+with st.sidebar:
