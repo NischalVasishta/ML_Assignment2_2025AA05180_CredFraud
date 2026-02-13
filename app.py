@@ -121,3 +121,22 @@ with right:
     report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
     rep_df = pd.DataFrame(report).transpose()
     st.dataframe(rep_df.style.format("{:.4f}"), use_container_width=True)
+@st.cache_data
+def file_to_bytes(path: str) -> bytes:
+    with open(path, "rb") as f:
+        return f.read()
+
+st.sidebar.subheader("Sample test file")
+
+try:
+    sample_bytes = file_to_bytes("test_data.csv")
+    st.sidebar.download_button(
+        label="Download sample test_data.csv",
+        data=sample_bytes,
+        file_name="test_data.csv",
+        mime="text/csv",
+        key="download-test-csv",
+    )
+    st.sidebar.caption("Use this file for upload testing (includes 'Class').")
+except FileNotFoundError:
+    st.sidebar.warning("test_data.csv not found in repo. Add it to enable downloads.")
